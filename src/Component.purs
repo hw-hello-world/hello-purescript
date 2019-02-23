@@ -43,7 +43,7 @@ ui =
 render :: State -> H.ComponentHTML Query
 render st =
   HH.form_ $
-    [ HH.h1_ [ HH.text "Lookup GitHub user" ]
+    [ HH.h1_ [ HH.text "Lookup Okta user" ]
     , HH.label_
         [ HH.div_ [ HH.text "Enter username:" ]
         , HH.input
@@ -83,7 +83,7 @@ eval = case _ of
     pure next
 
 oktaUsers :: String -> AX.Affjax String
-oktaUsers query = AX.affjax AXResponse.string (oktaRequest { url = "/api/v1/users" })
+oktaUsers query = AX.affjax AXResponse.string (oktaRequest { url = "/api/v1/users?q=" <> query })
 
 
 oktaRequest :: AX.AffjaxRequest

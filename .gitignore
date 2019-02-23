@@ -7,4 +7,5 @@
 /.psc*
 /.purs*
 /.psa*
-/dist
+/scripts/*.sh
+/public/purs-dist/

@@ -1,0 +1,4 @@
+  -- render: s -> h (ComponentSlot h ps m (f Unit)) (f Unit)
+  -- State -> HTML (ComponentSlot HTML ps Aff (Query Unit)) (Query Unit)
+  -- ComponentHTML' (Query Unit) () Aff
+  -- HTML (ComponentSlot HTML () Aff (Query Unit)) (Query Unit)

@@ -1,1 +1,2 @@
-- [ ] webpack
+- [ ] display `Json`
+- [ ] decode json to User data type

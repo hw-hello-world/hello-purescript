@@ -7,7 +7,7 @@
     "clean": "rimraf output && rimraf .pulp-cache",
     "build": "pulp build --optimise --to public/purs-dist/main.js",
     "watch": "pulp -w build --optimise --to public/purs-dist/main.js",
-    "start": "PORT=4001 node bin/www",
+    "start": "node bin/www",
     "postinstall": "bower install"
   },
   "keywords": [],

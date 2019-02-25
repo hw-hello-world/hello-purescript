@@ -7,5 +7,5 @@
 /.psc*
 /.purs*
 /.psa*
-/scripts/*.sh
+/Makefile
 /public/purs-dist/

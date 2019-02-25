@@ -2,17 +2,20 @@ module Component where
 
 import Prelude
 
+import DOM.HTML.Indexed as DOM
 import Data.Either (Either(..))
+import Data.HTTP.Method (Method(..), CustomMethod)
 import Data.Maybe (Maybe(..))
 import Effect.Aff (Aff)
-import Data.HTTP.Method (Method(..), CustomMethod)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
+import Halogen.Query as HQ
 import Network.HTTP.Affjax as AX
 import Network.HTTP.Affjax.Response as AXResponse
 import Network.HTTP.RequestHeader as RH
+import Nim.Styles as Styles
 
 type State =
   { loading :: Boolean
@@ -22,7 +25,8 @@ type State =
 
 data Query a
   = SetUsername String a
-  | MakeRequest a
+  | FetchUsers a
+  | AddUser a
 
 initialState :: State
 initialState = {
@@ -40,42 +44,66 @@ ui =
     , receiver: const Nothing
     }
 
+{- Button -}
+data OButtonType = OPrimary | OSecondary | ODanger | OSecondaryDanger
+type OButtonOption f = { btnLabel :: String
+                         , btnDisabled :: Boolean
+                         , btnClicked :: HQ.Action f
+                         , btnClass :: OButtonType
+                         }
+
+oButton :: forall f p. OButtonOption f -> HH.HTML p (f Unit)
+oButton btnOpt =
+  HH.button
+  [ HP.disabled btnOpt.btnDisabled
+  , HP.type_ HP.ButtonButton
+  , HP.class_ (H.ClassName ("button" <> btnClassName))
+  , HE.onClick (HE.input_ btnOpt.btnClicked)
+  ]
+  [ HH.text btnOpt.btnLabel ]
+  where btnClassName = case btnOpt.btnClass of
+          ODanger -> " is-button-danger"
+          OSecondary -> " is-button-secondary"
+          OSecondaryDanger -> " is-button-danger is-button-secondary"
+          _ -> ""
+
+{- Form -}
+{- TextInput -}
+type OTextInputOpt a f = { label :: String
+                       , name :: String
+                       , value :: String
+                       , action :: (a -> HQ.Action f)
+                       }
+oTextInput textInputOpt =
+  HH.fieldset
+      [ HP.class_ Styles.fieldset ]
+      [ HH.div
+        [ HP.class_ Styles.fieldsetFlex ]
+        [ HH.input
+          [ HP.class_ Styles.textInput
+          , HP.type_ HP.InputText
+          , HP.name textInputOpt.name
+          , HP.required true
+          , HP.value textInputOpt.value
+          , HE.onValueInput (HE.input textInputOpt.action)
+          ]
+        , HH.label
+          [ HP.for textInputOpt.name
+          , HP.class_ Styles.label
+          ]
+          [ HH.text textInputOpt.label ]
+        ]
+      ]
+
+{- Table -}
+
 render :: State -> H.ComponentHTML Query
 render st =
   HH.form_ $
     [ HH.h1_ [ HH.text "Lookup Okta user" ]
-    , HH.fieldset
-      [ HP.class_ (H.ClassName "fieldset") ]
-      [ HH.div
-        [ HP.class_ (H.ClassName "fieldset-flex") ]
-        [ HH.input
-          [ HP.class_ (H.ClassName "text-input")
-          , HP.type_ HP.InputText
-          , HP.name "name"
-          , HP.required true
-          , HP.value st.username
-          , HE.onValueInput (HE.input SetUsername)
-          ]
-        , HH.label
-          [ HP.for "name"
-          , HP.class_ (H.ClassName "label")
-          ]
-          [ HH.text "Enter Username"]
-        ]
-      ]
-    , HH.button
-        [ HP.disabled st.loading
-        , HP.type_ HP.ButtonButton
-        , HP.class_ (H.ClassName "button" )
-        , HE.onClick (HE.input_ MakeRequest)
-        ]
-        [ HH.text "Fetch info" ]
-    , HH.button
-      [ HP.type_ HP.ButtonButton
-      , HP.class_ (H.ClassName "button" )
-      --, HE.onClick (HE.input_ MakeRequest)
-      ]
-      [ HH.text "Add User" ]
+    , (oTextInput { label: "Enter Username", name: "name", value: st.username, action: SetUsername })
+    , (oButton { btnDisabled : st.loading, btnLabel : "Fetch Users", btnClicked: FetchUsers, btnClass: OPrimary })
+    , (oButton { btnDisabled : false, btnLabel : "Add User", btnClicked : FetchUsers, btnClass: OSecondary })
     , HH.p_
         [ HH.text (if st.loading then "Working..." else "") ]
     , HH.div_
@@ -94,7 +122,9 @@ eval = case _ of
   SetUsername username next -> do
     H.modify_ (_ { username = username, result = Nothing :: Maybe String })
     pure next
-  MakeRequest next -> do
+  AddUser next -> do
+    pure next
+  FetchUsers next -> do
     username <- H.gets _.username
     H.modify_ (_ { loading = true })
     response <- H.liftAff $ oktaUsers username

@@ -44,19 +44,38 @@ render :: State -> H.ComponentHTML Query
 render st =
   HH.form_ $
     [ HH.h1_ [ HH.text "Lookup Okta user" ]
-    , HH.label_
-        [ HH.div_ [ HH.text "Enter username:" ]
-        , HH.input
-            [ HP.value st.username
-            , HE.onValueInput (HE.input SetUsername)
-            ]
+    , HH.fieldset
+      [ HP.class_ (H.ClassName "fieldset") ]
+      [ HH.div
+        [ HP.class_ (H.ClassName "fieldset-flex") ]
+        [ HH.input
+          [ HP.class_ (H.ClassName "text-input")
+          , HP.type_ HP.InputText
+          , HP.name "name"
+          , HP.required true
+          , HP.value st.username
+          , HE.onValueInput (HE.input SetUsername)
+          ]
+        , HH.label
+          [ HP.for "name"
+          , HP.class_ (H.ClassName "label")
+          ]
+          [ HH.text "Enter Username"]
         ]
+      ]
     , HH.button
         [ HP.disabled st.loading
         , HP.type_ HP.ButtonButton
+        , HP.class_ (H.ClassName "button" )
         , HE.onClick (HE.input_ MakeRequest)
         ]
         [ HH.text "Fetch info" ]
+    , HH.button
+      [ HP.type_ HP.ButtonButton
+      , HP.class_ (H.ClassName "button" )
+      --, HE.onClick (HE.input_ MakeRequest)
+      ]
+      [ HH.text "Add User" ]
     , HH.p_
         [ HH.text (if st.loading then "Working..." else "") ]
     , HH.div_

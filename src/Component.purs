@@ -1,7 +1,10 @@
 module Component where
 
 import Prelude
-
+import Simple.JSON (readJSON)
+import Data.List.NonEmpty
+import Control.Monad.Except
+import Foreign
 import DOM.HTML.Indexed as DOM
 import Data.Either (Either(..))
 import Data.HTTP.Method (Method(..), CustomMethod)
@@ -17,10 +20,23 @@ import Network.HTTP.Affjax.Response as AXResponse
 import Network.HTTP.RequestHeader as RH
 import Nim.Styles as Styles
 
+type User = { id :: String
+          , status :: String
+          , profile :: UserProfile
+          }
+type UserProfile = { email :: String
+                 , firstName :: String
+                 , lastName :: String
+                 , login :: String
+                 }
+
+--newtype Users = Users { users :: Array User }
+
 type State =
   { loading :: Boolean
   , username :: String
   , result :: Maybe String
+  , users :: Either MultipleErrors (Array User)
   }
 
 data Query a
@@ -32,7 +48,8 @@ initialState :: State
 initialState = {
   loading: false,
   username: "",
-  result: Nothing
+  result: Nothing,
+  users: Right []
 }
 
 ui :: H.Component HH.HTML Query Unit Void Aff
@@ -115,7 +132,13 @@ render st =
             , HH.pre_
                 [ HH.code_ [ HH.text res ] ]
             ]
+     , HH.div_
+        case st.users of
+          Right us -> map renderUser us
+          Left e -> [HH.text ("found error" <> show e)]
     ]
+
+renderUser user = HH.p_ [HH.text user.profile.email]
 
 eval :: Query ~> H.ComponentDSL State Query Void Aff
 eval = case _ of
@@ -128,6 +151,7 @@ eval = case _ of
     username <- H.gets _.username
     H.modify_ (_ { loading = true })
     response <- H.liftAff $ oktaUsers username
+    H.modify_ (_ { users = readJSON response.response  })
     H.modify_ (_ { loading = false, result = Just response.response })
     pure next
 
